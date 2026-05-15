@@ -1,13 +1,9 @@
-import { Button } from '@/components/ui/button';
-import React from 'react';
-import prisma from '@/lib/db';
+import { caller } from '@/trpc/server';
 
 const Page = async () => {
-  return (
-    <div>
-      <Button variant="default">heyy</Button>
-    </div>
-  );
+  const result = await caller.createAI({ text: "abhilov PREFETCH" });
+
+  return <div>{JSON.stringify(result)}</div>;
 };
 
 export default Page;
