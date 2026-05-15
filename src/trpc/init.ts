@@ -1,5 +1,4 @@
 import { initTRPC } from '@trpc/server';
- 
 /**
  * This context creator accepts `headers` so it can be reused in both
  * the RSC server caller (where you pass `next/headers`) and the
@@ -9,7 +8,6 @@ export const createTRPCContext = async (opts: { headers: Headers }) => {
   // const user = await auth(opts.headers);
   return { userId: 'user_123' };
 };
- 
 // Avoid exporting the entire t-object
 // since it's not very descriptive.
 // For instance, the use of a t variable
@@ -22,7 +20,6 @@ const t = initTRPC
      */
     // transformer: superjson,
   });
- 
 // Base router and procedure helpers
 export const createTRPCRouter = t.router;
 export const createCallerFactory = t.createCallerFactory;
