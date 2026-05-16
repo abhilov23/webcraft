@@ -8,7 +8,12 @@ export const helloWorld = inngest.createFunction(
       return { processed: true, id: event.data.id };
     });
 
-    await step.sleep("pause", "1s");
+    await step.sleep("wait-a-moment", "5s");
+
+        await step.sleep("step 2", "5s");
+    
+        await step.sleep("step 3", "5s");
+
 
     return { message: `Task ${event.data.id} complete`, result };
   }

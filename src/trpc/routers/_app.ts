@@ -11,7 +11,7 @@ export const appRouter = createTRPCRouter({
       id: input.text
     }
    })
-   return { ok: true };
+   return { ok: "success" };
   }),
 
   createAI: baseProcedure
