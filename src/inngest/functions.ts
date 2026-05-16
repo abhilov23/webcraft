@@ -1,20 +1,35 @@
 // src/inngest/functions.ts
+
+import { createAgent, openai } from "@inngest/agent-kit";
 import { inngest } from "./client";
 
 export const helloWorld = inngest.createFunction(
-  { id: "hello-world", triggers: [{ event: "app/hello.world" }] },
+  {
+    id: "hello-world",
+    triggers: [{ event: "app/hello.world" }],
+  },
   async ({ event, step }) => {
-    const result = await step.run("handle-task", async () => {
-      return { processed: true, id: event.data.id };
+
+    const summarizer = createAgent({
+      name: "summarizer",
+      system:"you are a expert summarizer, You summarize in 2 words",
+      model: openai({
+        model: "llama-3.3-70b-versatile", // Groq model
+        apiKey: process.env.GROQ_API_KEY,
+        baseUrl: "https://api.groq.com/openai/v1",
+      })
     });
+
+    const result = await summarizer.run(
+      `Summarize the following test: ${event.data.value}`
+    );
 
     await step.sleep("wait-a-moment", "5s");
 
-        await step.sleep("step 2", "5s");
-    
-        await step.sleep("step 3", "5s");
+    console.log(result.output);
 
-
-    return { message: `Task ${event.data.id} complete`, result };
+    return {
+      message: result.output,
+    };
   }
 );
