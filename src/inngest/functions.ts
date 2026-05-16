@@ -10,9 +10,9 @@ export const helloWorld = inngest.createFunction(
   },
   async ({ event, step }) => {
 
-    const summarizer = createAgent({
-      name: "summarizer",
-      system:"you are a expert summarizer, You summarize in 2 words",
+    const codeAgent = createAgent({
+      name: "code-agent",
+      system:"you are a expert nextJS developer, You write readable, maintainable code. you write simple Nextjs and react snippet",
       model: openai({
         model: "llama-3.3-70b-versatile", // Groq model
         apiKey: process.env.GROQ_API_KEY,
@@ -20,8 +20,8 @@ export const helloWorld = inngest.createFunction(
       })
     });
 
-    const result = await summarizer.run(
-      `Summarize the following test: ${event.data.value}`
+    const result = await codeAgent.run(
+      `Write the following code snippet in nextjs: ${event.data.value}`
     );
 
     await step.sleep("wait-a-moment", "5s");
@@ -29,7 +29,7 @@ export const helloWorld = inngest.createFunction(
     console.log(result.output);
 
     return {
-      message: result.output,
+      message: result,
     };
   }
 );
