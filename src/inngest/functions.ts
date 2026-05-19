@@ -13,7 +13,7 @@ export const helloWorld = inngest.createFunction(
   async ({ event, step }) => {
 
     const SandboxId = await step.run("get-sandbox-id", async () => {
-      const sandbox = await Sandbox.create("abhilov01/vibe-nextjs-test");
+      const sandbox = await Sandbox.create("abhilov01/vibe-nextjs-test-2");
       return sandbox.sandboxId;
     });
 
