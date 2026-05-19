@@ -4,9 +4,9 @@
 
 import { z } from "zod";
 import { Sandbox } from "e2b";
-import { createAgent, createTool, openai } from "@inngest/agent-kit";
+import { createAgent, createNetwork, createTool, openai } from "@inngest/agent-kit";
 import { inngest } from "./client";
-import { getSandbox } from "./utils";
+import { getSandbox, lastAssistantTextMessageContent } from "./utils";
 
 export const helloWorld = inngest.createFunction(
   {
@@ -23,15 +23,55 @@ export const helloWorld = inngest.createFunction(
         sandboxUrl: `https://${sandbox.getHost(3000)}`,
       };
     });
+
     const codeAgent = createAgent({
       name: "code-agent",
       system:
         "you are a expert nextJS developer, You write readable, maintainable code. you write simple Nextjs and react snippet",
-      model: openai({
-        model: "llama-3.3-70b-versatile", // Groq model
-        apiKey: process.env.GROQ_API_KEY,
-        baseUrl: "https://api.groq.com/openai/v1",
-      }),
+   //   model: openai({
+   //     model: "llama-3.3-70b-versatile", // Groq model
+    //    apiKey: process.env.GROQ_API_KEY,
+     //   baseUrl: "https://api.groq.com/openai/v1",
+     //   defaultParameters: {
+     //     temperature: 0.1,
+     //   },
+    //  model: openai({
+    //  model: "gemini-2.0-flash",
+    //  apiKey: process.env.GEMINI_API_KEY,
+    //  baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai",
+    //   defaultParameters: {
+    //     temperature: 0.1,
+    //   },
+    //   }),
+  //   model: openai({
+  // model: "qwen/qwen2.5-coder-7b-instruct:free",
+  // apiKey: process.env.OPENROUTER_API_KEY,
+  // baseUrl: "https://openrouter.ai/api/v1",
+  // defaultParameters: {
+  //   temperature: 0.1,
+  // },
+  // model: openai({
+  // model: "llama-3.1-8b-instant",
+  // apiKey: process.env.GROQ_API_KEY,
+  // baseUrl: "https://api.groq.com/openai/v1",
+  // defaultParameters: {
+  //   temperature: 0.1,
+  // },
+ // model: openai({
+ // model: "mistralai/mistral-medium-3.5-128b",
+ // apiKey: process.env.NVIDIA_NIM_API_KEY,
+ // baseUrl: "https://integrate.api.nvidia.com/v1",
+ // defaultParameters: {
+ //   temperature: 0.1,
+ // },
+ model: openai({
+  model: "gemini-2.0-flash",
+  apiKey: process.env.GEMINI_API_KEY,
+  baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai",
+  defaultParameters: {
+    temperature: 0.1,
+  },
+}),
       tools: [
         createTool({
           name: "terminal",
@@ -86,24 +126,26 @@ export const helloWorld = inngest.createFunction(
               })
             ),
           }),
-          handler: async ({ files }, { step , network}) => {
-            const newFiles =  await step?.run("createOrUpdateFiles", async () => {
+          handler: async ({ files }, { step, network }) => {
+            if (!step) return "Step context is unavailable";
+            const newFiles = await step.run("createOrUpdateFiles", async () => {
               try {
-                const updatedFiles = network.state.data.files || [];
+                const updatedFiles = (network?.state?.data?.files ?? {}) as Record<string, string>;
                 const sandbox = await getSandbox(sandboxId);
 
                 for (const file of files) {
-                await sandbox.files.write(file.path, file.content);
-                updatedFiles[file.path] = file.content;
+                  await sandbox.files.write(file.path, file.content);
+                  updatedFiles[file.path] = file.content;
                 }
                 return updatedFiles;
               } catch (error) {
-                  return "Error:"+error;
+                return "Error:" + error;
               }
             });
-            if(typeof newFiles ===  "object"){
+            if (typeof newFiles === "object" && network) {
               network.state.data.files = newFiles;
             }
+            return newFiles;
           },
         }),
         createTool({
@@ -113,7 +155,8 @@ export const helloWorld = inngest.createFunction(
             files: z.array(z.string()),
           }),
           handler: async ({ files }, { step }) => {
-            return await step?.run("readFile", async () => {
+            if (!step) return "Step context is unavailable";
+            return await step.run("readFile", async () => {
               try {
                 const sandbox = await getSandbox(sandboxId);
                 const contents = [];
@@ -124,22 +167,46 @@ export const helloWorld = inngest.createFunction(
                 }
                 return JSON.stringify(contents);
               } catch (error) {
-                return "Error:"+error;
-              }})
+                return "Error:" + error;
+              }
+            });
           },
-        })
-
+        }),
       ],
+      lifecycle: {
+        onResponse: async ({ result, network }) => {
+          const lastAssistantMessageText = lastAssistantTextMessageContent(result);
+
+          if (lastAssistantMessageText && network) {
+            if (lastAssistantMessageText.includes("<text_summary>")) {
+              network.state.data.summary = lastAssistantMessageText;
+            }
+          }
+          return result;
+        },
+      },
     });
+     
+    const network = createNetwork({
+      name: "coding-agent-network",
+      agents: [codeAgent],
+      maxIter: 20,
+      router: async ({ network }) => {
+        const summary = network.state.data.summary;
+        if(summary){
+          return;
+        }
+        return codeAgent;
+      }
+    })
 
-    const result = await codeAgent.run(
-      `Write the following code snippet in nextjs: ${event.data.value}`
-    );
-
+    const result = await network.run(event.data.value);
 
     return {
-      message: result,
-      sandboxUrl
+      url : sandboxUrl,
+      title: "Fragment",
+      files: result.state.data.files,
+      summary: result.state.data.summary,
     };
   }
 );
