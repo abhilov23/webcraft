@@ -10,7 +10,8 @@ RUN chmod +x /compile_page.sh
 # Install dependencies and customize sandbox
 WORKDIR /home/user/nextjs-app
 
-RUN npx --yes create-next-app@15.3.3 . --yes
+# using --yes to skip prompts during installation
+RUN npx --yes create-next-app@15.3.3 . --yes 
 
 RUN npx --yes shadcn@2.6.3 init --yes -b neutral --force
 RUN npx --yes shadcn@2.6.3 add --all --yes
