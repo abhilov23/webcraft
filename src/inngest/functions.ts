@@ -7,6 +7,7 @@ import { Sandbox } from "e2b";
 import { createAgent, createNetwork, createTool, openai } from "@inngest/agent-kit";
 import { inngest } from "./client";
 import { getSandbox, lastAssistantTextMessageContent } from "./utils";
+import { PROMPT } from "@/prompt";
 
 export const helloWorld = inngest.createFunction(
   {
@@ -16,7 +17,7 @@ export const helloWorld = inngest.createFunction(
   async ({ event, step }) => {
     const { sandboxId, sandboxUrl } = await step.run("create-sandbox", async () => {
       const sandbox = await Sandbox.create("vibe-nextjs-test-3", {
-        timeoutMs: 60 * 5 * 1000,
+        timeoutMs: 60 * 30 * 1000,
       });
       return {
         sandboxId: sandbox.sandboxId,
@@ -26,48 +27,11 @@ export const helloWorld = inngest.createFunction(
 
     const codeAgent = createAgent({
       name: "code-agent",
-      system:
-        "you are a expert nextJS developer, You write readable, maintainable code. you write simple Nextjs and react snippet",
-   //   model: openai({
-   //     model: "llama-3.3-70b-versatile", // Groq model
-    //    apiKey: process.env.GROQ_API_KEY,
-     //   baseUrl: "https://api.groq.com/openai/v1",
-     //   defaultParameters: {
-     //     temperature: 0.1,
-     //   },
-    //  model: openai({
-    //  model: "gemini-2.0-flash",
-    //  apiKey: process.env.GEMINI_API_KEY,
-    //  baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai",
-    //   defaultParameters: {
-    //     temperature: 0.1,
-    //   },
-    //   }),
-  //   model: openai({
-  // model: "qwen/qwen2.5-coder-7b-instruct:free",
-  // apiKey: process.env.OPENROUTER_API_KEY,
-  // baseUrl: "https://openrouter.ai/api/v1",
-  // defaultParameters: {
-  //   temperature: 0.1,
-  // },
-  // model: openai({
-  // model: "llama-3.1-8b-instant",
-  // apiKey: process.env.GROQ_API_KEY,
-  // baseUrl: "https://api.groq.com/openai/v1",
-  // defaultParameters: {
-  //   temperature: 0.1,
-  // },
- // model: openai({
- // model: "mistralai/mistral-medium-3.5-128b",
- // apiKey: process.env.NVIDIA_NIM_API_KEY,
- // baseUrl: "https://integrate.api.nvidia.com/v1",
- // defaultParameters: {
- //   temperature: 0.1,
- // },
+      system:PROMPT,
  model: openai({
-  model: "gemini-2.0-flash",
-  apiKey: process.env.GEMINI_API_KEY,
-  baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai",
+  model: "gemini-3-flash-preview",
+  apiKey: process.env.LINKAPI_KEY,
+  baseUrl: "https://api.linkapi.ai/v1/",
   defaultParameters: {
     temperature: 0.1,
   },
