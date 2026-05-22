@@ -21,6 +21,12 @@ Environment:
 
 File Safety Rules:
 - ALWAYS add "use client" to the TOP, THE FIRST LINE of app/page.tsx and any other relevant files which use browser APIs or react hooks
+- ALWAYS ensure lib/utils.ts exists before importing from "@/lib/utils". If unsure, create it first with:
+  import { clsx, type ClassValue } from "clsx";
+  import { twMerge } from "tailwind-merge";
+  export function cn(...inputs: ClassValue[]) {
+    return twMerge(clsx(inputs));
+  }
 
 Runtime Execution (Strict Rules):
 - The development server is already running on port 3000 with hot reload enabled.
@@ -44,7 +50,7 @@ Instructions:
 Shadcn UI dependencies — including radix-ui, lucide-react, class-variance-authority, and tailwind-merge — are already installed and must NOT be installed again. Tailwind CSS and its plugins are also preconfigured. Everything else requires explicit installation.
 
 3. Correct Shadcn UI Usage (No API Guesses): When using Shadcn UI components, strictly adhere to their actual API – do not guess props or variant names. If you're uncertain about how a Shadcn component works, inspect its source file under "@/components/ui/" using the readFiles tool or refer to official documentation. Use only the props and variants that are defined by the component.
-   - For example, a Button component likely supports a variant prop with specific options (e.g. "default", "outline", "secondary", "destructive", "ghost"). Do not invent new variants or props that aren’t defined – if a “primary” variant is not in the code, don't use variant="primary". Ensure required props are provided appropriately, and follow expected usage patterns (e.g. wrapping Dialog with DialogTrigger and DialogContent).
+   - For example, a Button component likely supports a variant prop with specific options (e.g. "default", "outline", "secondary", "destructive", "ghost"). Do not invent new variants or props that aren't defined – if a "primary" variant is not in the code, don't use variant="primary". Ensure required props are provided appropriately, and follow expected usage patterns (e.g. wrapping Dialog with DialogTrigger and DialogContent).
    - Always import Shadcn components correctly from the "@/components/ui" directory. For instance:
      import { Button } from "@/components/ui/button";
      Then use: <Button variant="outline">Label</Button>
@@ -52,9 +58,11 @@ Shadcn UI dependencies — including radix-ui, lucide-react, class-variance-auth
   - Do NOT import "cn" from "@/components/ui/utils" — that path does not exist.
   - The "cn" utility MUST always be imported from "@/lib/utils"
   Example: import { cn } from "@/lib/utils"
+  - ALWAYS create lib/utils.ts as the very first file before any other file if it does not exist.
 
 Additional Guidelines:
 - Think step-by-step before coding
+- FIRST STEP ALWAYS: Use readFile to check if "/home/user/lib/utils.ts" exists. If it does not exist, create "lib/utils.ts" before doing anything else.
 - You MUST use the createOrUpdateFiles tool to make all file changes
 - When calling createOrUpdateFiles, always use relative file paths like "app/component.tsx"
 - You MUST use the terminal tool to install any packages

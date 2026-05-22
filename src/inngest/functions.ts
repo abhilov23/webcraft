@@ -1,6 +1,4 @@
 // src/inngest/functions.ts
-// abhilov01/vibe-nextjs-test-2
-
 
 import { z } from "zod";
 import { Sandbox } from "e2b";
@@ -16,9 +14,16 @@ export const helloWorld = inngest.createFunction(
   },
   async ({ event, step }) => {
     const { sandboxId, sandboxUrl } = await step.run("create-sandbox", async () => {
-      const sandbox = await Sandbox.create("vibe-nextjs-test-3", {
-        timeoutMs: 60 * 30 * 1000,
+      const sandbox = await Sandbox.create("vibe-nextjs-test-4", {
+        timeoutMs: 60 * 60 * 1000,
       });
+
+      // Wait for Next.js dev server to be ready
+      await sandbox.commands.run(
+        "while ! curl -s http://localhost:3000 > /dev/null; do sleep 1; done",
+        { timeoutMs: 60_000 }
+      );
+
       return {
         sandboxId: sandbox.sandboxId,
         sandboxUrl: `https://${sandbox.getHost(3000)}`,
@@ -27,15 +32,15 @@ export const helloWorld = inngest.createFunction(
 
     const codeAgent = createAgent({
       name: "code-agent",
-      system:PROMPT,
- model: openai({
-  model: "gemini-3-flash-preview",
-  apiKey: process.env.LINKAPI_KEY,
-  baseUrl: "https://api.linkapi.ai/v1/",
-  defaultParameters: {
-    temperature: 0.1,
-  },
-}),
+      system: PROMPT,
+      model: openai({
+        model: "gemini-3-flash-preview",
+        apiKey: process.env.LINKAPI_KEY,
+        baseUrl: "https://api.linkapi.ai/v1/",
+        defaultParameters: {
+          temperature: 0.1,
+        },
+      }),
       tools: [
         createTool({
           name: "terminal",
@@ -150,24 +155,24 @@ export const helloWorld = inngest.createFunction(
         },
       },
     });
-     
+
     const network = createNetwork({
       name: "coding-agent-network",
       agents: [codeAgent],
       maxIter: 20,
       router: async ({ network }) => {
         const summary = network.state.data.summary;
-        if(summary){
+        if (summary) {
           return;
         }
         return codeAgent;
-      }
-    })
+      },
+    });
 
     const result = await network.run(event.data.value);
 
     return {
-      url : sandboxUrl,
+      url: sandboxUrl,
       title: "Fragment",
       files: result.state.data.files,
       summary: result.state.data.summary,
