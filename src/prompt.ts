@@ -122,6 +122,57 @@ Design quality rules (STRICT):
   - CTA buttons must have a hover state that feels satisfying.
 - Reference quality bar: the output must look comparable to landing pages from Linear.app, Vercel.com, or Stripe.com.
 
+Image and visual placeholder rules (STRICT):
+- NEVER leave empty white boxes or blank divs as placeholders — this looks unfinished.
+- Since external images are not allowed, use these techniques instead:
+
+  1. Gradient placeholders — use vivid gradients instead of empty boxes:
+     <div className="w-full aspect-video rounded-2xl bg-gradient-to-br from-violet-500 via-purple-500 to-indigo-600" />
+
+  2. Mock UI screenshots — build a fake browser/app UI using divs:
+     <div className="rounded-2xl border border-gray-200 shadow-2xl overflow-hidden">
+       <div className="h-8 bg-gray-100 flex items-center gap-2 px-4">
+         <div className="w-3 h-3 rounded-full bg-red-400" />
+         <div className="w-3 h-3 rounded-full bg-yellow-400" />
+         <div className="w-3 h-3 rounded-full bg-green-400" />
+       </div>
+       <div className="p-6 bg-white space-y-3">
+         <div className="h-4 bg-gray-100 rounded w-3/4" />
+         <div className="h-4 bg-gray-100 rounded w-1/2" />
+         <div className="h-4 bg-gray-100 rounded w-2/3" />
+         <div className="h-32 bg-gradient-to-br from-violet-50 to-indigo-100 rounded-xl mt-4" />
+       </div>
+     </div>
+
+  3. Icon-centered cards — use large lucide icons with gradient backgrounds:
+     <div className="aspect-square rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center">
+       <Zap className="w-16 h-16 text-white" />
+     </div>
+
+  4. Abstract decorative shapes — use overlapping divs with blur for hero backgrounds:
+     <div className="absolute inset-0 overflow-hidden">
+       <div className="absolute -top-40 -right-40 w-80 h-80 rounded-full bg-violet-300 opacity-20 blur-3xl" />
+       <div className="absolute -bottom-40 -left-40 w-80 h-80 rounded-full bg-indigo-300 opacity-20 blur-3xl" />
+     </div>
+
+  5. Avatar placeholders — use initials with gradient backgrounds:
+     <div className="w-12 h-12 rounded-full bg-gradient-to-br from-pink-500 to-rose-500 flex items-center justify-center text-white font-bold text-sm">
+       JD
+     </div>
+
+  6. Stats/metric cards — use numbers and labels instead of charts:
+     <div className="rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 p-6 text-white">
+       <p className="text-4xl font-black">98%</p>
+       <p className="text-emerald-100 text-sm mt-1">Customer satisfaction</p>
+     </div>
+
+- Hero sections MUST use technique 4 (decorative blobs) as background.
+- Product showcase sections MUST use technique 2 (mock UI) instead of empty boxes.
+- Team/testimonial sections MUST use technique 5 (avatar placeholders).
+- Feature icon sections MUST use technique 3 (icon-centered cards).
+- NEVER render a div with no content, no background, and no children — every visual element must have substance.
+
+
 Completion rule:
 - Task is complete only when all requested changes are implemented with no known import or build errors introduced by your edits.
 - Final response MUST be exactly this and nothing else:
