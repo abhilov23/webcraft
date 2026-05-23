@@ -2,9 +2,19 @@
 
 import { z } from "zod";
 import { Sandbox } from "e2b";
-import { createAgent, createNetwork, createTool, openai } from "@inngest/agent-kit";
+import {
+  createAgent,
+  createNetwork,
+  createTool,
+  openai,
+} from "@inngest/agent-kit";
+
 import { inngest } from "./client";
-import { getSandbox, lastAssistantTextMessageContent } from "./utils";
+import {
+  getSandbox,
+  lastAssistantTextMessageContent,
+} from "./utils";
+
 import { PROMPT } from "@/prompt";
 
 export const helloWorld = inngest.createFunction(
@@ -12,170 +22,461 @@ export const helloWorld = inngest.createFunction(
     id: "hello-world",
     triggers: [{ event: "app/hello.world" }],
   },
+
   async ({ event, step }) => {
-    const { sandboxId, sandboxUrl } = await step.run("create-sandbox", async () => {
-      const sandbox = await Sandbox.create("vibe-nextjs-test-4", {
-        timeoutMs: 60 * 60 * 1000,
-      });
+    const MAX_TERMINAL_CALLS = 6;
+    const MAX_WRITE_CALLS = 8;
+    const MAX_READ_CALLS = 12;
+    let terminalCalls = 0;
+    let writeCalls = 0;
+    let readCalls = 0;
+    let lastTerminalCommand = "";
+    let repeatedTerminalCommandCount = 0;
 
-      // Wait for Next.js dev server to be ready
-      await sandbox.commands.run(
-        "while ! curl -s http://localhost:3000 > /dev/null; do sleep 1; done",
-        { timeoutMs: 60_000 }
+    const { sandboxId, sandboxUrl } =
+      await step.run(
+        `create-sandbox-${event.id}`,
+        async () => {
+
+          const sandbox =
+            await Sandbox.create(
+              "vibe-nextjs-test-6",
+              {
+                timeoutMs:
+                  60 * 60 * 1000,
+              }
+            );
+
+          await sandbox.commands.run(
+            "while ! curl -s http://localhost:3000 > /dev/null; do sleep 1; done",
+            {
+              timeoutMs: 60_000,
+            }
+          );
+
+          console.log(
+            "CREATED SANDBOX:",
+            sandbox.sandboxId
+          );
+
+          return {
+            sandboxId:
+              sandbox.sandboxId,
+
+            sandboxUrl:
+              `https://${sandbox.getHost(
+                3000
+              )}`,
+          };
+        }
       );
-
-      return {
-        sandboxId: sandbox.sandboxId,
-        sandboxUrl: `https://${sandbox.getHost(3000)}`,
-      };
-    });
 
     const codeAgent = createAgent({
       name: "code-agent",
+
       system: PROMPT,
+
       model: openai({
-        model: "gemini-3-flash-preview",
-        apiKey: process.env.LINKAPI_KEY,
-        baseUrl: "https://api.linkapi.ai/v1/",
+        model:
+          "gemini-3-flash-preview",
+
+        apiKey:
+          process.env.LINKAPI_KEY,
+
+        baseUrl:
+          "https://api.linkapi.ai/v1/",
+
         defaultParameters: {
           temperature: 0.1,
         },
       }),
+
       tools: [
+
         createTool({
           name: "terminal",
-          parameters: z.object({
-            command: z.string(),
-          }),
-          handler: async ({ command }, { step }) => {
-            if (!step) {
+
+          parameters:
+            z.object({
+              command:
+                z.string(),
+            }),
+
+          handler: async (
+            { command },
+            { step }
+          ) => {
+
+            if (!step)
+              return {
+                error:
+                  "Step unavailable",
+              };
+
+            terminalCalls += 1;
+            if (terminalCalls > MAX_TERMINAL_CALLS) {
               return {
                 stdout: "",
                 stderr: "",
-                error: "Step context is unavailable",
+                error: `Terminal call budget exceeded (${MAX_TERMINAL_CALLS})`,
               };
             }
 
-            return await step.run("terminal", async () => {
-              const buffers = { stdout: "", stderr: "" };
-
-              try {
-                const sandbox = await getSandbox(sandboxId);
-                await sandbox.commands.run(command, {
-                  onStdout: (data: string) => {
-                    buffers.stdout += data;
-                  },
-                  onStderr: (data: string) => {
-                    buffers.stderr += data;
-                  },
-                });
-
-                return {
-                  stdout: buffers.stdout,
-                  stderr: buffers.stderr,
-                };
-              } catch (error) {
-                return {
-                  stdout: buffers.stdout,
-                  stderr: buffers.stderr,
-                  error: error instanceof Error ? error.message : "Unknown error",
-                };
-              }
-            });
-          },
-        }),
-        createTool({
-          name: "createOrUpdateFiles",
-          description: "Create or update files in the sandbox",
-          parameters: z.object({
-            files: z.array(
-              z.object({
-                path: z.string(),
-                content: z.string(),
-              })
-            ),
-          }),
-          handler: async ({ files }, { step, network }) => {
-            if (!step) return "Step context is unavailable";
-            const newFiles = await step.run("createOrUpdateFiles", async () => {
-              try {
-                const updatedFiles = (network?.state?.data?.files ?? {}) as Record<string, string>;
-                const sandbox = await getSandbox(sandboxId);
-
-                for (const file of files) {
-                  await sandbox.files.write(file.path, file.content);
-                  updatedFiles[file.path] = file.content;
-                }
-                return updatedFiles;
-              } catch (error) {
-                return "Error:" + error;
-              }
-            });
-            if (typeof newFiles === "object" && network) {
-              network.state.data.files = newFiles;
+            if (lastTerminalCommand === command) {
+              repeatedTerminalCommandCount += 1;
+            } else {
+              lastTerminalCommand = command;
+              repeatedTerminalCommandCount = 1;
             }
-            return newFiles;
+
+            if (repeatedTerminalCommandCount > 2) {
+              return {
+                stdout: "",
+                stderr: "",
+                error: "Repeated terminal command detected; stopping to prevent loops",
+              };
+            }
+
+            console.log(
+              "TERMINAL USING:",
+              sandboxId
+            );
+
+            return await step.run(
+              `terminal-${Date.now()}`,
+              async () => {
+
+                const buffers = {
+                  stdout: "",
+                  stderr: "",
+                };
+
+                try {
+
+                  const sandbox =
+                    await getSandbox(
+                      sandboxId
+                    );
+
+                  await sandbox
+                    .commands.run(
+                      command,
+                      {
+                        onStdout:
+                          (
+                            data
+                          ) => {
+                            buffers.stdout +=
+                              data;
+                          },
+
+                        onStderr:
+                          (
+                            data
+                          ) => {
+                            buffers.stderr +=
+                              data;
+                          },
+                      }
+                    );
+
+                  return buffers;
+
+                } catch (error) {
+
+                  return {
+                    ...buffers,
+
+                    error:
+                      error instanceof Error
+                        ? error.message
+                        : "Unknown",
+                  };
+                }
+              }
+            );
           },
         }),
+
+        createTool({
+          name:
+            "createOrUpdateFiles",
+
+          description:
+            "Create or update files",
+
+          parameters:
+            z.object({
+              files:
+                z.array(
+                  z.object({
+                    path:
+                      z.string(),
+
+                    content:
+                      z.string(),
+                  })
+                ),
+            }),
+
+          handler: async (
+            { files },
+            {
+              step,
+              network,
+            }
+          ) => {
+
+            if (!step)
+              return "No step";
+
+            writeCalls += 1;
+            if (writeCalls > MAX_WRITE_CALLS) {
+              return `Write call budget exceeded (${MAX_WRITE_CALLS})`;
+            }
+
+            console.log(
+              "FILES USING:",
+              sandboxId
+            );
+
+            return await step.run(
+              `write-files-${Date.now()}`,
+              async () => {
+
+                try {
+
+                  const sandbox =
+                    await getSandbox(
+                      sandboxId
+                    );
+
+                  const updatedFiles =
+                    (
+                      network
+                        ?.state
+                        ?.data
+                        ?.files ??
+                      {}
+                    ) as Record<
+                      string,
+                      string
+                    >;
+
+                  for (
+                    const file of files
+                  ) {
+
+                    await sandbox
+                      .files.write(
+                        file.path,
+                        file.content
+                      );
+
+                    updatedFiles[
+                      file.path
+                    ] =
+                      file.content;
+                  }
+
+                  network!.state
+                    .data.files =
+                    updatedFiles;
+
+                  return updatedFiles;
+
+                } catch (e) {
+
+                  return (
+                    "Error: " + e
+                  );
+                }
+              }
+            );
+          },
+        }),
+
         createTool({
           name: "readFile",
-          description: "Read files from the sandbox",
-          parameters: z.object({
-            files: z.array(z.string()),
-          }),
-          handler: async ({ files }, { step }) => {
-            if (!step) return "Step context is unavailable";
-            return await step.run("readFile", async () => {
-              try {
-                const sandbox = await getSandbox(sandboxId);
-                const contents = [];
 
-                for (const filePath of files) {
-                  const content = await sandbox.files.read(filePath);
-                  contents.push({ path: filePath, content });
+          parameters:
+            z.object({
+              files:
+                z.array(
+                  z.string()
+                ),
+            }),
+
+          handler: async (
+            { files },
+            { step }
+          ) => {
+
+            if (!step)
+              return "No step";
+
+            readCalls += 1;
+            if (readCalls > MAX_READ_CALLS) {
+              return `Read call budget exceeded (${MAX_READ_CALLS})`;
+            }
+
+            console.log(
+              "READ USING:",
+              sandboxId
+            );
+
+            return await step.run(
+              `read-files-${Date.now()}`,
+              async () => {
+
+                try {
+
+                  const sandbox =
+                    await getSandbox(
+                      sandboxId
+                    );
+
+                  const contents =
+                    [];
+
+                  for (
+                    const filePath of files
+                  ) {
+
+                    const content =
+                      await sandbox
+                        .files.read(
+                          filePath
+                        );
+
+                    contents.push({
+                      path:
+                        filePath,
+                      content,
+                    });
+                  }
+
+                  return JSON.stringify(
+                    contents
+                  );
+
+                } catch (e) {
+
+                  return (
+                    "Error: " + e
+                  );
                 }
-                return JSON.stringify(contents);
-              } catch (error) {
-                return "Error:" + error;
               }
-            });
+            );
           },
         }),
       ],
+
       lifecycle: {
-        onResponse: async ({ result, network }) => {
-          const lastAssistantMessageText = lastAssistantTextMessageContent(result);
 
-          if (lastAssistantMessageText && network) {
-            if (lastAssistantMessageText.includes("<text_summary>")) {
-              network.state.data.summary = lastAssistantMessageText;
+        onResponse:
+          async ({
+            result,
+            network,
+          }) => {
+
+            const text =
+              lastAssistantTextMessageContent(
+                result
+              );
+
+            if (
+              text &&
+              network
+            ) {
+
+              if (
+                text.includes(
+                  "<task_summary>"
+                )
+              ) {
+
+                network
+                  .state
+                  .data
+                  .summary =
+                  text;
+              }
             }
-          }
-          return result;
-        },
+
+            return result;
+          },
       },
     });
 
-    const network = createNetwork({
-      name: "coding-agent-network",
-      agents: [codeAgent],
-      maxIter: 20,
-      router: async ({ network }) => {
-        const summary = network.state.data.summary;
-        if (summary) {
-          return;
-        }
-        return codeAgent;
-      },
-    });
+    const network =
+      createNetwork({
 
-    const result = await network.run(event.data.value);
+        name:
+          "coding-agent-network",
+
+        agents: [
+          codeAgent,
+        ],
+
+        maxIter: 6,
+
+        router:
+          async ({
+            network,
+          }) => {
+
+            const summary =
+              network
+                .state
+                .data
+                .summary;
+
+            if (summary)
+              return;
+
+            const files =
+              network
+                .state
+                .data
+                .files as
+                | Record<string, string>
+                | undefined;
+
+            if (
+              files &&
+              Object.keys(files)
+                .length > 0 &&
+              terminalCalls >=
+                MAX_TERMINAL_CALLS
+            ) {
+              return;
+            }
+
+            return codeAgent;
+          },
+      });
+
+    const result =
+      await network.run(
+        event.data.value
+      );
 
     return {
-      url: sandboxUrl,
-      title: "Fragment",
-      files: result.state.data.files,
-      summary: result.state.data.summary,
+
+      url:
+        sandboxUrl,
+
+      title:
+        "Fragment",
+
+      files:
+        result.state
+          .data.files,
+
+      summary:
+        result.state
+          .data.summary,
     };
   }
 );
