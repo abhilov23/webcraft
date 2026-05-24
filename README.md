@@ -1,143 +1,257 @@
 # Vibe
 
-AI-powered development platform that lets you create web applications by chatting with AI agents in real-time sandboxes.
+AI-powered web application development platform that lets you create full Next.js applications by chatting with AI agents in real-time E2B sandboxes.
 
 ## Features
 
-- 🤖 AI-powered code generation with AI agents
-- 💻 Real-time Next.js application development in E2B sandboxes
-- 🔄 Live preview & code preview with split-pane interface
-- 📁 File explorer with syntax highlighting and code theme
-- 💬 Conversational project development with message history
-- 🎯 Smart usage tracking and rate limiting
-- 💳 Subscription management with pro features
-- 🔐 Authentication with Clerk
-- ⚙️ Background job processing with Inngest
-- 🗃️ Project management and persistence
+- 🤖 **AI Code Generation** — Conversational development with AI agents powered by Inngest agent-kit
+- 🏗️ **Real-time Next.js Development** — AI agents build and iterate on apps inside E2B sandboxes
+- 🔄 **Live Preview & Code View** — Split-pane resizable interface with Demo and Code tabs
+- 📁 **File Explorer** — Browse generated files with a tree view and syntax highlighting (Prism.js)
+- 💬 **Conversational UI** — Message history with automatic fragment selection and loading states
+- 🎯 **Credit-based Usage** — Rate-limited credits (2 free / 100 pro) with 30-day reset window
+- 💳 **Subscription Management** — Pro plan via Clerk PricingTable with tiered credit allocation
+- 🔐 **Authentication** — Clerk-powered sign-in/sign-up with route protection
+- ⚙️ **Background Processing** — Inngest orchestrates AI agent jobs asynchronously
+- 🌓 **Theme Support** — Light, dark, and system themes via next-themes
+- 🚀 **Project Templates** — Quick-start prompts for common apps (Netflix, Dashboard, Kanban, etc.)
 
 ## Tech Stack
 
-- Next.js 15
-- React 19
-- TypeScript
-- Tailwind CSS v4
-- Shadcn/ui
-- tRPC
-- Prisma ORM
-- PostgreSQL
-- OpenAI, Anthropic or Grok
-- E2B Code Interpreter
-- Clerk Authentication
-- Inngest
-- Prisma
-- Radix UI
-- Lucide React
+| Category | Technology |
+|----------|-----------|
+| **Framework** | Next.js 15.3 (Turbopack) + React 19 |
+| **Language** | TypeScript |
+| **Styling** | Tailwind CSS v4 + tw-animate-css |
+| **UI Components** | Shadcn/ui (New York style) + Radix UI |
+| **Icons** | Lucide React |
+| **API Layer** | tRPC v11 (with TanStack React Query v5) |
+| **Database** | PostgreSQL + Prisma ORM v6 |
+| **Auth** | Clerk (with subscription/PricingTable) |
+| **Background Jobs** | Inngest v3 |
+| **AI Agent Framework** | @inngest/agent-kit |
+| **AI Models** | Model-agnostic (OpenAI, Anthropic, Grok, etc.) |
+| **Sandbox Runtime** | E2B Code Interpreter |
+| **Forms** | React Hook Form + Zod |
+| **Charts** | Recharts |
+| **Toast Notifications** | Sonner |
+| **Split Panels** | react-resizable-panels |
+| **Syntax Highlighting** | Prism.js |
 
-## Building E2B Template (REQUIRED)
+## How It Works
 
-Before running the application, you must build the E2B template that the AI agents use to create sandboxes.
+```mermaid
+flowchart LR
+    User[User] -->|Describes idea| Chat[Chat Interface]
+    Chat -->|Sends event| Inngest[Inngest
+ Background Job]
+    Inngest -->|Spins up| Sandbox[E2B Sandbox
+ Next.js 15]
+    Sandbox -->|AI agent generates| Code[Code & Files]
+    Sandbox -->|Dev server on :3000| Preview[Live Preview
+ via iframe]
+    Code -->|Saved to DB| Fragment[Fragment
+ + Messages]
+    Preview -->|Displayed in| UI[Split-Pane UI]
+    Fragment -->|Browsable in| Explorer[File Explorer]
+    User -->|Refines| Chat
+```
 
-**Prerequisites:**
-- Docker must be installed and running (the template build command uses Docker CLI)
+1. **Describe** — User enters a prompt (or selects a template)
+2. **Process** — Message is sent via Inngest to an AI agent running inside an E2B sandbox
+3. **Generate** — The AI agent writes files and runs commands in the sandbox to build a Next.js app
+4. **Preview** — The live sandbox URL is embedded as an iframe in the Demo tab
+5. **Refine** — Users continue chatting to iterate, and the agent modifies the code
+6. **Browse** — Generated files are viewable in the Code tab with a tree explorer
+
+## Project Structure
+
+```
+src/
+├── app/                      # Next.js App Router pages & layouts
+│   ├── (home)/               # Public pages (home, pricing, sign-in, sign-up)
+│   │   └── page.tsx          # Landing page with project form
+│   ├── projects/             # Project detail (protected)
+│   │   └── [projectId]/      # Dynamic project route
+│   ├── api/                  # API routes (tRPC, Inngest)
+│   ├── globals.css           # Tailwind & theme variables
+│   └── layout.tsx            # Root layout (Clerk, TRPC, Theme)
+├── components/               # Shared UI components
+│   ├── ui/                   # shadcn/ui primitives
+│   ├── code-view/            # Syntax-highlighted code viewer
+│   ├── file-explorer.tsx     # File tree browser
+│   ├── tree-view.tsx         # Recursive tree component
+│   └── user-control.tsx      # User menu (avatar, sign out)
+├── modules/                  # Feature modules
+│   ├── home/                 # Landing page, navbar, project form, templates
+│   ├── projects/             # Project view, messages, code preview, iframe
+│   ├── messages/             # Message CRUD procedures
+│   └── usage/                # Usage status procedures
+├── inngest/                  # Background AI agent logic
+│   ├── client.ts             # Inngest client
+│   ├── functions.ts          # Code agent: orchestrates sandbox + agent-kit
+│   ├── types.ts              # Constants
+│   └── utils.ts              # Sandbox helpers, output parsers
+├── lib/                      # Utilities
+│   ├── db.ts                 # Prisma client singleton
+│   ├── usage.ts              # Rate limiter (credits system)
+│   └── utils.ts              # cn() helper, file-to-tree converter
+├── hooks/                    # Custom React hooks
+├── trpc/                     # tRPC client, server, router setup
+│   ├── client.tsx            # React provider + TRPCReactProvider
+│   ├── server.tsx            # Server-side fetch helpers
+│   ├── init.ts               # tRPC initialization, auth middleware
+│   ├── query-client.ts       # TanStack Query configuration
+│   └── routers/_app.ts       # Router composition
+├── middleware.ts             # Clerk auth middleware
+├── prompt.ts                 # AI agent system prompts
+└── types.ts                  # Shared types
+
+prisma/
+├── schema.prisma             # Database schema (Project, Message, Fragment, Usage)
+└── migrations/               # Database migrations
+
+sandbox-templates/
+└── nextjs/                   # E2B Sandbox Docker config
+    ├── e2b.Dockerfile        # Pre-installs Next.js 15 + all shadcn components
+    └── compile_page.sh       # Starts dev server + compiles the page
+```
+
+## Architecture Overview
+
+### AI Agent System
+
+The code generation is powered by Inngest's **agent-kit** framework:
+
+- **Code Agent** — A senior software engineer agent that operates inside an E2B sandbox with three tools:
+  - `terminal` — Runs shell commands (npm install, diagnostics)
+  - `createOrUpdateFiles` — Writes files to the sandbox filesystem
+  - `readFiles` — Reads files from the sandbox
+- **Fragment Title Generator** — Generates short titles for code fragments
+- **Response Generator** — Wraps up results in a user-friendly message
+
+The agent is **model-agnostic** — configure any OpenAI-compatible provider via `MODEL_URL`, `MODEL_NAME`, and `LINKAPI_KEY`.
+
+### E2B Sandbox Lifecycle
+
+1. A new sandbox is created on every run using a pre-built template (`vibe-nextjs-test-6`)
+2. The sandbox has a 60-minute timeout
+3. The Docker template pre-installs Next.js 15 + all shadcn/ui components
+4. The AI agent writes code and the dev server (already running) hot-reloads
+5. The sandbox URL is saved to the database and the UI polls for updates (via refetchInterval) to display it in an iframe
+
+### Credit & Usage System
+
+- **Free tier**: 2 credits per 30 days
+- **Pro tier**: 100 credits per 30 days (via Clerk subscriptions)
+- Each message sent to the AI agent consumes 1 credit
+- Rate limiting is enforced via `rate-limiter-flexible` with Prisma storage
+
+### Database Schema
+
+- **Project** — Belongs to a user, has many messages
+- **Message** — Either USER or ASSISTANT role; RESULT or ERROR type; optionally has one Fragment
+- **Fragment** — Captures the sandbox URL, title, and generated files (JSON) per assistant message
+- **Usage** — Rate limiter key-value store (points, expiry)
+
+## Quick Start
+
+### 1. Prerequisites
+
+- **Node.js** 20+
+- **PostgreSQL** database
+- **Docker** (for building the E2B sandbox template)
+- **E2B CLI** (`npm i -g @e2b/cli`)
+
+### 2. Build E2B Template (Required)
 
 ```bash
-# Install E2B CLI
-npm i -g @e2b/cli
-# or
-brew install e2b
-
 # Login to E2B
 e2b auth login
 
-# Navigate to the sandbox template directory
+# Build the sandbox template
 cd sandbox-templates/nextjs
-
-# Build the template (replace 'your-template-name' with your desired name)
-e2b template build --name your-template-name --cmd "/compile_page.sh"
+e2b template build --name vibe-nextjs --cmd "/compile_page.sh"
 ```
 
-After building the template, update the template name in `src/inngest/functions.ts`:
+After building, update the template name in `src/inngest/functions.ts`:
 
 ```typescript
-// Replace "vibe-nextjs-test-2" with your template name
-const sandbox = await Sandbox.create("your-template-name");
+const sandbox = await Sandbox.create("vibe-nextjs");
 ```
 
-## Development
+### 3. Set Up the App
 
 ```bash
 # Install dependencies
 npm install
 
-# Set up environment variables
+# Configure environment
 cp env.example .env
-# Fill in your API keys and database URL
+# Fill in all required variables (see below)
 
-# Set up database
-npx prisma migrate dev # Enter name "init" for migration
+# Run database migrations
+npx prisma migrate dev
 
-# Start development server
+# Start development server (with Inngest dev server)
 npm run dev
 ```
 
+Inngest dev server runs on port 8288 by default (`INNGEST_DEV=1`).
+
 ## Environment Variables
 
-Create a `.env` file with the following variables:
-
 ```bash
-DATABASE_URL=""
+# Database
+DATABASE_URL="postgresql://user:password@localhost:5432/vibe"
 NEXT_PUBLIC_APP_URL="http://localhost:3000"
 
-# OpenAI
-OPENAI_API_KEY=""
+# Inngest (dev mode enables local dev server)
+INNGEST_DEV=1
 
-# E2B
-E2B_API_KEY=""
+# AI Model (OpenAI-compatible API)
+LINKAPI_KEY="sk-..."       # Your API key (OpenAI, Anthropic, Grok, etc.)
+MODEL_URL="https://api.openai.com/v1"  # Base URL for your model provider
+MODEL_NAME="gpt-4o"       # Model identifier
 
-# Clerk
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=""
-CLERK_SECRET_KEY=""
+# E2B Sandbox
+E2B_API_KEY="e2b_..."
+
+# Clerk Authentication
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="pk_..."
+CLERK_SECRET_KEY="sk_..."
 NEXT_PUBLIC_CLERK_SIGN_IN_URL="/sign-in"
 NEXT_PUBLIC_CLERK_SIGN_UP_URL="/sign-up"
 NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL="/"
 NEXT_PUBLIC_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL="/"
 ```
 
-## Additional Commands
+## Scripts
 
-```bash
-# Database
-npm run postinstall        # Generate Prisma client
-npx prisma studio          # Open database studio
-npx prisma migrate dev     # Migrate schema changes
-npx prisma migrate reset   # Reset database (Only for development)
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start dev server with Turbopack + Inngest |
+| `npm run build` | Production build |
+| `npm run start` | Start production server |
+| `npm run lint` | Run ESLint |
+| `npm run postinstall` | Generate Prisma client |
+| `npx prisma studio` | Open database UI |
+| `npx prisma migrate dev` | Apply schema changes |
+| `npx prisma migrate reset` | Reset database (dev only) |
 
-# Build
-npm run build          # Build for production
-npm run start          # Start production server
-npm run lint           # Run ESLint
-```
+## Project Templates
 
-## Project Structure
+The home page includes quick-start templates that auto-fill the prompt:
 
-- `src/app/` - Next.js app router pages and layouts
-- `src/components/` - Reusable UI components and file explorer
-- `src/modules/` - Feature-specific modules (projects, messages, usage)
-- `src/inngest/` - Background job functions and AI agent logic
-- `src/lib/` - Utilities and database client
-- `src/trpc/` - tRPC router and client setup
-- `prisma/` - Database schema and migrations
-- `sandbox-templates/` - E2B sandbox configuration
-
-## How It Works
-
-1. **Project Creation**: Users create projects and describe what they want to build
-2. **AI Processing**: Messages are sent to GPT-4 agents via Inngest background jobs
-3. **Code Generation**: AI agents use E2B sandboxes to generate and test Next.js applications
-4. **Real-time Updates**: Generated code and previews are displayed in split-pane interface
-5. **File Management**: Users can browse generated files with syntax highlighting
-6. **Iteration**: Conversational development allows for refinements and additions
+- 🎬 Netflix Clone — Dark-mode streaming homepage
+- 📦 Admin Dashboard — Sidebar, stats, charts, tables
+- 📋 Kanban Board — Drag-and-drop task management
+- 🗂️ File Manager — Folder/file grid with CRUD
+- 📺 YouTube Clone — Video grid with sidebar & modal
+- 🛍️ Store Page — Product grid with cart logic
+- 🏡 Airbnb Clone — Listings grid with filters
+- 🎵 Spotify Clone — Music player with dark mode
 
 ---
 
-Created by [CodeWithAntonio](https://codewithantonio.com)
+Built with [Inngest Agent Kit](https://www.inngest.com/docs/agent-kit) · [E2B](https://e2b.dev) · [Clerk](https://clerk.com)
