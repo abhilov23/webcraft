@@ -1,6 +1,5 @@
+<img width="2800" height="560" alt="webcraft-hero-banner (1)" src="https://github.com/user-attachments/assets/b145b13c-ee50-4716-a84b-5db7363430a5" />
 
-
-<img width="2800" height="560" alt="webcraft-hero-banner" src="https://github.com/user-attachments/assets/2566567b-270c-4544-83ae-d20e4ebcce0d" />
 
 AI-powered web application development platform that lets you create full Next.js applications by chatting with AI agents in real-time E2B sandboxes.
 
