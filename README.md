@@ -1,4 +1,6 @@
-# Vibe
+
+
+<img width="2800" height="560" alt="webcraft-hero-banner" src="https://github.com/user-attachments/assets/2566567b-270c-4544-83ae-d20e4ebcce0d" />
 
 AI-powered web application development platform that lets you create full Next.js applications by chatting with AI agents in real-time E2B sandboxes.
 
@@ -14,7 +16,8 @@ AI-powered web application development platform that lets you create full Next.j
 - 🔐 **Authentication** — Clerk-powered sign-in/sign-up with route protection
 - ⚙️ **Background Processing** — Inngest orchestrates AI agent jobs asynchronously
 - 🌓 **Theme Support** — Light, dark, and system themes via next-themes
-- 🚀 **Project Templates** — Quick-start prompts for common apps (Netflix, Dashboard, Kanban, etc.)
+- 🚀 **Project Templates** — Quick-start prompts for common apps (Netflix, Dashboard, Kanban, etc.
+
 
 ## Tech Stack
 
